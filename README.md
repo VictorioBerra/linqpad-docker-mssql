@@ -1,4 +1,4 @@
-# LinqPad = Docker + Microsoft SQL Server
+# LinqPad + Docker + Microsoft SQL Server
 
 A small template that:
 
