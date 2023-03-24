@@ -9,6 +9,10 @@ A small template that:
 
 Theres a little flag that also lets you skip the creation and deletion of the container if you need a more rapid development experience.
 
+## TODO
+
+I would like to move all of the code off to a NuGet package.
+
 ## LICENSE:
 
 MIT
