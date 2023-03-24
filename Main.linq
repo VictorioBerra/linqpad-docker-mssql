@@ -23,8 +23,8 @@ public class Program
 		var imageTag = "latest";
 		var containerName = "linqpad-sql1";
 		var sqlServerPassword = "<YourStrong@Passw0rd>";
-		var deleteContainerIfExists = false;
-		var deleteContainerWhenDone = false;
+		var deleteContainerIfExists = true;
+		var deleteContainerWhenDone = true;
 		var pullLatestImage = true;
 		var intervalBetweenHealthyQuery = TimeSpan.FromSeconds(2);
 		
@@ -52,7 +52,7 @@ public class Program
 				await WaitUntilContainerHealthy(client, createSQLServerContainerResponse.ContainerID, intervalBetweenHealthyQuery);	
 			}
 			
-			if (createSQLServerContainerResponse.ExistingContainer is not null)
+			if (createSQLServerContainerResponse.ExistingContainer is null)
 			{
 				"Creating database...".Dump();
 				CreateDatabase();
@@ -64,7 +64,7 @@ public class Program
 			
 			connectionString += "Database=TestDB;";
 
-			if (createSQLServerContainerResponse.ExistingContainer is not null)
+			if (createSQLServerContainerResponse.ExistingContainer is null)
 			{
 				"Creating database tables...".Dump();
 				InitializeDatabase();
@@ -228,9 +228,9 @@ public class Program
 			},
 			Healthcheck = new HealthConfig
 			{
-				Interval = TimeSpan.FromSeconds(1),
-				Timeout = TimeSpan.FromSeconds(20),
-				Retries = 3,
+				Interval = TimeSpan.FromSeconds(3),
+				Timeout = TimeSpan.FromSeconds(60),
+				Retries = 6,
 				StartPeriod = (long)TimeSpan.FromSeconds(5).TotalNanoseconds,
 				Test = new List<string>
 				{
