@@ -17,11 +17,15 @@ public class Program
 	
 	public static async Task Main()
 	{
+		var startingTimestamp = Stopwatch.GetTimestamp();
+		
 		var imageName = "mcr.microsoft.com/mssql/server";
 		var imageTag = "latest";
 		var containerName = "linqpad-sql1";
 		var sqlServerPassword = "<YourStrong@Passw0rd>";
-		var deleteIfExists = true;
+		var deleteContainerIfExists = false;
+		var deleteContainerWhenDone = false;
+		var pullLatestImage = true;
 		var intervalBetweenHealthyQuery = TimeSpan.FromSeconds(2);
 		
 		DockerClient client = new DockerClientConfiguration().CreateClient();
@@ -29,8 +33,16 @@ public class Program
 		var createSQLServerContainerResponse = default(CreateSQLServerContainerResponse);
 		try
 		{
-			await PullLatestMicrosoftSQL(client, imageName, imageTag);
-			createSQLServerContainerResponse = await CreateSQLServerContainerAsync(client, imageName, sqlServerPassword, containerName, deleteIfExists); // Heads up, this calls `CREATE DATABASE TestDB;`
+			if (pullLatestImage)
+			{
+				await PullLatestMicrosoftSQL(client, imageName, imageTag);
+			}
+			createSQLServerContainerResponse = await CreateSQLServerContainerAsync(
+				client,
+				imageName,
+				sqlServerPassword,
+				containerName, 
+				deleteContainerIfExists);
 			connectionString = createSQLServerContainerResponse.MicrosoftSQLServerConnectionString;
 			
 			// Skip if using existing container
@@ -40,14 +52,28 @@ public class Program
 				await WaitUntilContainerHealthy(client, createSQLServerContainerResponse.ContainerID, intervalBetweenHealthyQuery);	
 			}
 			
-			"Creating database...".Dump();
-			CreateDatabase();
+			if (createSQLServerContainerResponse.ExistingContainer is not null)
+			{
+				"Creating database...".Dump();
+				CreateDatabase();
+			}
+			else
+			{
+				"Existing Container Found, skipping database creation.".Dump();
+			}
 			
 			connectionString += "Database=TestDB;";
-			
-			"Creating database tables...".Dump();
-			InitializeDatabase();
-			
+
+			if (createSQLServerContainerResponse.ExistingContainer is not null)
+			{
+				"Creating database tables...".Dump();
+				InitializeDatabase();
+			}
+			else
+			{
+				"Existing Container Found, skipping database tables creation.".Dump();
+			}
+
 			// ---
 			// Your code here
 			// ---
@@ -62,7 +88,18 @@ public class Program
 		}
 		finally
 		{
-			await DeleteContainerAsync(client, createSQLServerContainerResponse.ContainerID);
+			if (deleteContainerWhenDone)
+			{
+				"Deleting container...".Dump();
+				await DeleteContainerAsync(client, createSQLServerContainerResponse.ContainerID);
+			}
+			else
+			{
+				"Skipping container delete due to option deleteContainerWhenDone.".Dump();
+			}
+			
+			var elapsedMilliseconds = Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds;			
+			$"app;dur={elapsedMilliseconds}.0".Dump();
 		}
 	}
 	
